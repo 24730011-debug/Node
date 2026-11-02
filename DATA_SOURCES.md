@@ -25,3 +25,10 @@ https://ice.go.kr/hakjeom/cm/cntnts/cntntsView.do?cntntsId=272&mi=10083
 
 교안 기준: 7주차 1.4.2~1.4.5 / 3.3
 https://heejeong-kim.github.io/web-project-practice-2026/lecture/index.html?week=07
+
+
+## 화면 출처 표시 간소화 (최신 적용)
+교수님 피드백에 따라 모든 화면 상단에 `J · 전체 더미 데이터`를 한 번 표시합니다.
+J는 JSON 파일에서 불러온 데이터를 뜻합니다. 학생별·필드별 반복 태그와 별도 출처 상세 표는 제거했습니다.
+JSON 원본의 meta.source / meta.real / meta.dummy 플래그는 그대로 유지합니다. 현재 API는 미연동입니다.
+이 설명이 이전의 반복 태그 UI 설명보다 우선합니다.
