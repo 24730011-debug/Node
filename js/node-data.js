@@ -12,13 +12,15 @@ window.nodeConvertStudents = function(rows) {
  const classes=new Map();
  const entry=(kind,s,date,extra)=>({...base(kind+'-'+s.id+'-'+db.entries.length),kind,studentId:s.id,classId:s.classId,logId:'',testId:'',date,duration:'',scoreCorrect:null,scoreTotal:null,time:'',status:'',content:'',memo:'',book:'',unit:'',reason:'',staff:s.teacher||'',review:false,...extra});
  const ids=new Set();
+ console.group('[데이터 점검] NODE JSON');console.log('데이터 건수:',rows.length);console.log('항목 출처:',rows.reduce((a,s)=>(a[s.meta?.source]=(a[s.meta?.source]||0)+1,a),{}));console.groupEnd();
  for(const s of rows){
+  if(!s.meta||!['json','api'].includes(s.meta.source)||!Array.isArray(s.meta.real)||!Array.isArray(s.meta.dummy))throw Error('출처 meta 누락 또는 형식 오류');
   if(!s.id||ids.has(s.id)||!Array.isArray(s.courseEnrollments))throw Error('학생 ID 중복 또는 수강 과정 누락');ids.add(s.id);
   const classId=s.schoolLevel+'-'+s.grade;
   if(!classes.has(classId)){classes.set(classId,true);db.classes.push({...base(classId),name:s.gradeLabel+' 시연반'});}
   const courses=s.courseEnrollments;
   const memo=[s.memo,'[가상 데이터 · '+s.curriculum+' 교육과정]',...courses.map(e=>`${e.subject} / ${e.courseName} / ${e.curriculum} / ${e.studyType} / 진도 ${e.progress}% / 숙제 ${e.homeworkCompleted}/${e.homeworkAssigned}`)].filter(Boolean).join('\n');
-  const student={...base(s.id),name:s.name,classId,school:s.school,grade:s.gradeLabel,subject:s.subjects.join(', '),subjectIds:s.subjects.map(n=>'subject-'+subjects.indexOf(n)),memo,teacher:s.teacher,courseEnrollments:courses};
+  const student={...base(s.id),name:s.name,classId,school:s.school,grade:s.gradeLabel,subject:s.subjects.join(', '),subjectIds:s.subjects.map(n=>'subject-'+subjects.indexOf(n)),memo,teacher:s.teacher,meta:s.meta,nodeRaw:s,courseEnrollments:courses};
   db.students.push(student);
   if(s.attendance!=='결석')db.attendance.push({...base('attendance-'+s.id),studentId:s.id,date:s.attendanceDate,time:s.attendance==='지각'?'16:20':'16:00',departureTime:'',memo:s.attendance});
   else db.entries.push(entry('memo',student,s.attendanceDate,{content:'출결: 결석',memo:'가상 출결 기록'}));
