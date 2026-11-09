@@ -32,3 +32,19 @@ https://heejeong-kim.github.io/web-project-practice-2026/lecture/index.html?week
 J는 JSON 파일에서 불러온 데이터를 뜻합니다. 학생 이름 옆에는 meta.source에 따라 작은 J(JSON) 또는 A(API) 배지를 표시합니다. 필드별 더미 태그와 별도 출처 상세 표는 제거했습니다.
 JSON 원본의 meta.source / meta.real / meta.dummy 플래그는 그대로 유지합니다. 현재 API는 미연동입니다.
 이 설명이 이전의 반복 태그 UI 설명보다 우선합니다.
+
+
+[2026-11-09 통합본]
+학생 300명의 이름을 자연스러운 합성 이름으로 변경하고, 반 이름은 중1~고3 정규반으로 변경.
+학교명은 실제 학교명이며 해당 학생의 재학 관계는 더미임. 실제 학생 기록을 사용하지 않음.
+중학교: 잠실중학교, 잠신중학교, 방이중학교, 석촌중학교, 방산중학교
+고등학교: 잠실고등학교, 잠신고등학교, 잠일고등학교, 오금고등학교, 방산고등학교
+출처: 송파구청 교육기관 학교안내, 2026-11-09 확인
+https://www.songpa.go.kr/www/tourListMain.do?cpn=7&key=2758&sc1=LV0043
+https://www.songpa.go.kr/child/tourListMain.do?cpn=8&key=3624&sc1=LV0043
+https://www.songpa.go.kr/www/tourListMain.do?cpn=11&key=2758&sc1=LV0043
+학교명 존재 여부만 참고. 데이터의 school 필드는 실제 재학 정보가 아닌 합성 배정이므로 meta.dummy에 유지.
+대시보드, 검색/필터 개선, 한글 반 ID 처리 수정 포함.
+기존 브라우저 저장 내용에서 변경되지 않은 기본 샘플 이름/학교/반/담당자만 자동 갱신. 직접 수정한 값과 기록은 유지.
+전체 폴더 내용은 index.html, css/, js/, data/, pages/, asset/ 및 설명 문서를 포함.
+기본 화면은 대시보드. 더미 출결 날짜는 2026-11-02이며 최근 기록 보기로 확인.

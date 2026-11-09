@@ -1,5 +1,5 @@
 /* NODE: JSON dataset -> existing UI schema. No external API or real student records. */
-window.NODE_DATA_CONFIG = Object.freeze({mode:'json',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-09-realistic-labels-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
 window.nodeConvertStudents = function(rows) {
  if(!Array.isArray(rows)||!rows.length)throw Error('학생 데이터 배열이 비어 있습니다.');
  const stamp='2026-11-02T11:30:00+09:00';
@@ -17,7 +17,7 @@ window.nodeConvertStudents = function(rows) {
   if(!s.meta||!['json','api'].includes(s.meta.source)||!Array.isArray(s.meta.real)||!Array.isArray(s.meta.dummy))throw Error('출처 meta 누락 또는 형식 오류');
   if(!s.id||ids.has(s.id)||!Array.isArray(s.courseEnrollments))throw Error('학생 ID 중복 또는 수강 과정 누락');ids.add(s.id);
   const classId=s.schoolLevel+'-'+s.grade;
-  if(!classes.has(classId)){classes.set(classId,true);db.classes.push({...base(classId),name:s.gradeLabel+' 시연반'});}
+  if(!classes.has(classId)){classes.set(classId,true);db.classes.push({...base(classId),name:s.className||s.gradeLabel+' 정규반',staff:s.teacher});}
   const courses=s.courseEnrollments;
   const memo=[s.memo,'[가상 데이터 · '+s.curriculum+' 교육과정]',...courses.map(e=>`${e.subject} / ${e.courseName} / ${e.curriculum} / ${e.studyType} / 진도 ${e.progress}% / 숙제 ${e.homeworkCompleted}/${e.homeworkAssigned}`)].filter(Boolean).join('\n');
   const student={...base(s.id),name:s.name,classId,school:s.school,grade:s.gradeLabel,subject:s.subjects.join(', '),subjectIds:s.subjects.map(n=>'subject-'+subjects.indexOf(n)),memo,teacher:s.teacher,meta:s.meta,nodeRaw:s,courseEnrollments:courses};
@@ -32,6 +32,27 @@ window.nodeConvertStudents = function(rows) {
   }
   if(s.makeupStatus!=='해당 없음')db.entries.push(entry('supplement',student,s.makeupDate,{status:s.makeupStatus,time:'17:00',content:'결석 수업 보강',reason:'결석'}));
  }
- db.nodeMetadata={source:'직접 제작한 더미 데이터 (AI 제작 도움)',isMockData:true,mode:'json',academicYear:2026,studentCount:rows.length};
+ db.nodeMetadata={source:'직접 제작한 더미 데이터 (AI 제작 도움)',isMockData:true,mode:'json',academicYear:2026,studentCount:rows.length,datasetVersion:window.NODE_DATA_CONFIG.datasetVersion};
  return db;
+};
+
+// Refresh only unchanged sample labels; retain IDs, edits, records and deleted items.
+window.nodeRefreshDemoLabels = function(saved,fresh){
+ const next=structuredClone(saved),original=new Map(fresh.students.map(s=>[s.id,s]));
+ for(const student of next.students){
+  const current=original.get(student.id),old=student.nodeRaw;if(!current||!old)continue;
+  for(const field of ['name','school','teacher'])if(student[field]===old[field])student[field]=current[field];
+  student.nodeRaw={...old,name:current.nodeRaw.name,school:current.nodeRaw.school,teacher:current.nodeRaw.teacher,className:current.nodeRaw.className,sourceDescription:current.nodeRaw.sourceDescription};
+  student.meta=structuredClone(current.meta);
+ }
+ for(const group of next.classes){
+  const updated=fresh.classes.find(c=>c.id===group.id);if(!updated)continue;
+  if(/^(중|고)[1-3] 시연반$/.test(group.name))group.name=updated.name;
+  if(!group.staff||/^가상강사[A-C]$/.test(group.staff))group.staff=updated.staff;
+ }
+ const teacherMap=new Map();
+ for(const student of saved.students){const current=original.get(student.id);if(current&&student.nodeRaw)teacherMap.set(student.id,{old:student.nodeRaw.teacher,next:current.teacher})}
+ for(const entry of next.entries){const pair=teacherMap.get(entry.studentId);if(pair&&entry.staff===pair.old)entry.staff=pair.next}
+ next.nodeMetadata={...next.nodeMetadata,datasetVersion:window.NODE_DATA_CONFIG.datasetVersion};
+ return next;
 };
