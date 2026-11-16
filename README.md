@@ -24,16 +24,16 @@ PC 웹 화면을 우선으로 제작했습니다. 시연에는 합성 학생 데
 
 | 버전 | 확인 링크 |
 | --- | --- |
-| **v0.1 · HTML 와이어프레임** | [전체 소스](https://github.com/24730011-debug/Node/tree/cade54fe3fbfd8719a4aebb7efe1943261e52ab1) · [index.html](https://github.com/24730011-debug/Node/blob/cade54fe3fbfd8719a4aebb7efe1943261e52ab1/index.html) · [ZIP 다운로드](https://github.com/24730011-debug/Node/archive/cade54fe3fbfd8719a4aebb7efe1943261e52ab1.zip) |
+| **v0.1 · HTML 와이어프레임** | [브라우저에서 열기](https://24730011-debug.github.io/Node/prototype/v0.1/index.html) · [index.html 소스](prototype/v0.1/index.html) |
 | **v0.4 · 구현본** | [시연 페이지](https://24730011-debug.github.io/Node/) · [전체 소스](https://github.com/24730011-debug/Node/tree/4fa3be98da0594ca6927ebe89df2a486debf2dff) · [ZIP 다운로드](https://github.com/24730011-debug/Node/archive/4fa3be98da0594ca6927ebe89df2a486debf2dff.zip) |
 
-저장소 이력을 기준으로 2026-10-19의 초기 화면 프로토타입(`cade54f`)을 v0.1 제출 기준으로 삼았습니다. 2026-11-16 기준으로 제출하는 v0.4의 소스는 2026-11-09 커밋(`4fa3be9`)에 고정했습니다.
+v0.1에는 수업 제출용으로 정리한 단일 HTML 와이어프레임을 연결했습니다. 파일 내부의 MATHHOLIC 이름과 빌드 표기는 첨부 사본의 원래 표기입니다. 2026-11-16 기준으로 제출하는 v0.4의 소스는 2026-11-09 커밋(`4fa3be9`)에 고정했습니다.
 
 ## 변경 이력
 
 ### v0.1 · 초기 HTML 와이어프레임
 
-- 오늘 기록, 학생 목록, 학생 상세 화면의 구조와 이동 흐름을 HTML 페이지로 구성했습니다.
+- 오늘 기록, 학생 목록, 학생 상세 화면의 구조와 이동 흐름을 확인할 수 있도록 CSS와 JavaScript가 포함된 HTML 사본을 보관했습니다.
 - 학생 데이터가 비어 있는 상태로 화면을 확인할 수 있으며, 화면에서 입력한 내용은 새로고침하면 초기화됩니다.
 
 ### v0.4 · 2026-11-16 제출 기준
@@ -45,8 +45,8 @@ PC 웹 화면을 우선으로 제작했습니다. 시연에는 합성 학생 데
 
 ## 실행 방법
 
-1. 위 표에서 원하는 버전의 ZIP을 내려받아 압축을 풉니다.
-2. VS Code에서 압축을 푼 폴더를 열고 Live Server로 `index.html`을 실행합니다.
+1. v0.1은 위 표의 **브라우저에서 열기**를 누릅니다. 소스에서 `index.html`을 내려받아 브라우저로 직접 열 수도 있습니다.
+2. v0.4는 시연 페이지를 열거나, ZIP을 내려받아 압축을 풀고 VS Code Live Server로 최상위 `index.html`을 실행합니다.
 3. v0.4 대시보드에서 예시 출결은 **2026-11-02**를 선택하거나 **최근 출결 기록 보기**를 눌러 확인할 수 있습니다.
 
 자세한 개발 메모는 [기존 설명서](READ_ME.txt), 데이터 출처는 [데이터 출처 문서](DATA_SOURCES.md)를 참고하세요.
