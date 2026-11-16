@@ -1,5 +1,5 @@
 /* NODE: JSON dataset -> existing UI schema. No external API or real student records. */
-window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-16-history-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-16-academic-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
 // Add fixed demo dates so opening historical records gives repeatable results.
 const nodeOctoberDates = [
  '2026-10-02','2026-10-05','2026-10-07','2026-10-09','2026-10-12','2026-10-14',
@@ -62,6 +62,72 @@ function nodeAddHistoricalSamples(db, sourceStudents = db.students) {
  });
 }
 
+// Map the demo curriculum into the same records used by the class and student views.
+function nodeAddAcademicSamples(db, sourceStudents = db.students) {
+ const indexes = Object.fromEntries(
+  ['tests','runs','entries','books','units','studentBooks','unitStates'].map(key =>
+   [key,new Map(db[key].map(row => [row.id,row]))])
+ );
+ const add = (key, id, date, fields) => {
+  const rows = indexes[key];
+  if (rows.has(id)) {
+   const row = rows.get(id);
+   return row.deletedAt ? null : row;
+  }
+  const stamp = date + 'T16:00:00+09:00';
+  const row = {id,createdAt:stamp,updatedAt:stamp,deletedAt:null,sample:true,...fields};
+  db[key].push(row);
+  rows.set(id,row);
+  return row;
+ };
+ const students = new Map(db.students.filter(row => !row.deletedAt).map(row => [row.id,row]));
+ const classes = new Map(db.classes.filter(row => !row.deletedAt).map(row => [row.id,row]));
+ const subjectIds = new Map(db.options.filter(row => row.category==='subject'&&!row.deletedAt).map(row => [row.name,row.id]));
+ const idPart = value => value.trim().replace(/[^\p{L}\p{N}]+/gu,'-');
+ const assigned = new Set(db.studentBooks.map(row => row.studentId));
+ const testDates = ['2026-10-19','2026-10-30','2026-11-10','2026-11-16'];
+ sourceStudents.forEach((source,index) => {
+  const student = students.get(source.id);
+  const group = student && classes.get(student.classId);
+  const courses = source.courseEnrollments || [];
+  const course = courses.find(row => row.subject==='수학') || courses[0];
+  if (!group || !course) return;
+  const scope = idPart(student.grade)+'-'+idPart(course.courseName);
+  const bookId = 'node-demo-book-' + scope;
+  if (!assigned.has(student.id)) {
+   const book = add('books',bookId,'2026-11-02',{name:course.courseName+' 연습교재 (시연용)',
+    grade:student.grade,subjectId:subjectIds.get(course.subject)||'',publisher:'',folderId:''});
+   if (book) {
+    const unit = add('units','node-demo-unit-'+scope+'-'+idPart(course.currentUnit),'2026-11-02',
+     {bookId,name:course.currentUnit,order:db.units.filter(row=>row.bookId===bookId).length});
+    if (unit) {
+     const assignment = add('studentBooks','node-demo-student-book-'+student.id,'2026-11-16',
+      {studentId:student.id,bookId,currentUnitId:unit.id,position:'',memo:'시연용 수강 과정'});
+     if (assignment && assignment.bookId===bookId) {
+      const status = ['유형별 풀이','전체 풀이','채점 완료','오답'][index%4];
+      add('unitStates','node-demo-unit-state-'+student.id,'2026-11-16',
+       {studentBookId:assignment.id,unitId:unit.id,status});
+     }
+    }
+   }
+  }
+  testDates.forEach((date,round) => {
+   const key = group.id+'-'+date;
+   const test = add('tests','node-demo-test-'+key,date,{name:group.name+' 수학 단원 테스트 (시연용)',
+    type:'단원 테스트',round:String(round+1),totalQuestions:20,answers:{},memo:'시연용 합성 테스트',
+    classId:group.id,date,staff:group.staff||'',rawName:''});
+   if (!test) return;
+   const run = add('runs','node-demo-run-'+key,date,{testId:test.id,classId:group.id,date,memo:'시연용 실시 기록'});
+   if (!run || run.testId!==test.id || !classes.has(run.classId)) return;
+   add('entries','node-demo-result-'+date+'-'+student.id,date,{kind:'test',studentId:student.id,
+    classId:run.classId,logId:'',testId:test.id,runId:run.id,date:run.date,duration:'',
+    scoreCorrect:Math.min(test.totalQuestions,8+(index*7+Math.floor(index/9)+round*3)%13),
+    scoreTotal:null,time:'',status:'',content:'',memo:'시연용 합성 결과',book:'',unit:'',
+    reason:'',staff:student.teacher||'',review:false});
+  });
+ });
+}
+
 window.nodeConvertStudents = function(rows) {
  if(!Array.isArray(rows)||!rows.length)throw Error('학생 데이터 배열이 비어 있습니다.');
  const stamp='2026-11-02T11:30:00+09:00';
@@ -96,6 +162,7 @@ window.nodeConvertStudents = function(rows) {
  }
  db.nodeMetadata={source:'직접 제작한 더미 데이터 (AI 제작 도움)',isMockData:true,mode:'json',academicYear:2026,studentCount:rows.length,datasetVersion:window.NODE_DATA_CONFIG.datasetVersion};
  nodeAddHistoricalSamples(db);
+ nodeAddAcademicSamples(db);
  return db;
 };
 
@@ -117,6 +184,7 @@ window.nodeRefreshDemoLabels = function(saved,fresh){
  for(const student of saved.students){const current=original.get(student.id);if(current&&student.nodeRaw)teacherMap.set(student.id,{old:student.nodeRaw.teacher,next:current.teacher})}
  for(const entry of next.entries){const pair=teacherMap.get(entry.studentId);if(pair&&entry.staff===pair.old)entry.staff=pair.next}
  nodeAddHistoricalSamples(next,fresh.students);
+ nodeAddAcademicSamples(next,fresh.students);
  next.nodeMetadata={...next.nodeMetadata,datasetVersion:window.NODE_DATA_CONFIG.datasetVersion};
  return next;
 };
