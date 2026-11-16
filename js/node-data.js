@@ -1,5 +1,67 @@
 /* NODE: JSON dataset -> existing UI schema. No external API or real student records. */
-window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-09-realistic-labels-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-16-history-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+// Add fixed demo dates so opening historical records gives repeatable results.
+const nodeOctoberDates = [
+ '2026-10-02','2026-10-05','2026-10-07','2026-10-09','2026-10-12','2026-10-14',
+ '2026-10-16','2026-10-19','2026-10-21','2026-10-23','2026-10-26','2026-10-28','2026-10-30'
+];
+const nodeDemoDates = [...nodeOctoberDates, '2026-11-16'];
+
+function nodeAddHistoricalSamples(db, sourceStudents = db.students) {
+ const attendanceKey = row => JSON.stringify([row.studentId, row.date]);
+ // Include deleted rows in these indexes so loading new samples doesn't restore deletions.
+ const attendanceKeys = new Set(db.attendance.map(attendanceKey));
+ const entryIds = new Set(db.entries.map(row => row.id));
+ for (const row of db.entries) {
+  if (row.kind === 'memo' && /^출결\s*[:：]\s*(결석|지각|출석)\s*$/.test(row.content || '')) {
+   attendanceKeys.add(attendanceKey(row));
+  }
+ }
+ const students = new Map(db.students.filter(row => !row.deletedAt).map(row => [row.id, row]));
+ const classes = new Set(db.classes.filter(row => !row.deletedAt).map(row => row.id));
+
+ nodeDemoDates.forEach((date, day) => {
+  sourceStudents.forEach((source, index) => {
+   const student = students.get(source.id);
+   if (!student || !classes.has(student.classId)) return;
+   const seed = (index * 37 + day * 19) % 100;
+   const status = seed < 5 ? '결석' : seed < 13 ? '지각' : '출석';
+   const time = student.grade.startsWith('고') ? '18:00' : '16:00';
+   const stamp = date + 'T' + time + ':00+09:00';
+   const base = {createdAt:stamp, updatedAt:stamp, deletedAt:null, sample:true};
+   const key = attendanceKey({studentId:student.id,date});
+   const addEntry = (kind, details) => {
+    const id = 'node-demo-history-' + kind + '-' + date + '-' + student.id;
+    if (entryIds.has(id)) return;
+    entryIds.add(id);
+    db.entries.push({...base,id,kind,studentId:student.id,classId:student.classId,date,
+     logId:'',testId:'',duration:'',scoreCorrect:null,scoreTotal:null,time:'',
+     status:'',content:'',memo:'',book:'',unit:'',reason:'',staff:student.teacher||'',review:false,
+     ...details});
+   };
+   if (seed < 98 && !attendanceKeys.has(key)) {
+    if (status === '결석') {
+     addEntry('memo',{content:'출결: 결석',memo:'시연용 합성 출결 기록'});
+    } else {
+     db.attendance.push({...base,id:'node-demo-history-attendance-'+date+'-'+student.id,
+      studentId:student.id,date,time:status==='지각'?time.replace(':00',':15'):time,
+      departureTime:'',memo:status});
+    }
+    attendanceKeys.add(key);
+   }
+   if (seed >= 13 && seed < 21) {
+    const topics = ['수업 예제 다시 풀기','오답 3문항 풀이 정리','복습 문제 5문항'];
+    addEntry('homework',{content:topics[(day+index)%topics.length],
+     status:seed<20?'완료':'부분완료',memo:'시연용 합성 숙제 기록'});
+   }
+   if (seed < 2) {
+    addEntry('supplement',{content:'이전 수업 핵심 문제 복습',time:'19:30',
+     status:date==='2026-11-16'?'예정':'완료',reason:'이전 수업 보충',memo:'시연용 합성 보강 기록'});
+   }
+  });
+ });
+}
+
 window.nodeConvertStudents = function(rows) {
  if(!Array.isArray(rows)||!rows.length)throw Error('학생 데이터 배열이 비어 있습니다.');
  const stamp='2026-11-02T11:30:00+09:00';
@@ -33,10 +95,11 @@ window.nodeConvertStudents = function(rows) {
   if(s.makeupStatus!=='해당 없음')db.entries.push(entry('supplement',student,s.makeupDate,{status:s.makeupStatus,time:'17:00',content:'결석 수업 보강',reason:'결석'}));
  }
  db.nodeMetadata={source:'직접 제작한 더미 데이터 (AI 제작 도움)',isMockData:true,mode:'json',academicYear:2026,studentCount:rows.length,datasetVersion:window.NODE_DATA_CONFIG.datasetVersion};
+ nodeAddHistoricalSamples(db);
  return db;
 };
 
-// Refresh only unchanged sample labels; retain IDs, edits, records and deleted items.
+// Refresh sample labels and add new demo history without overwriting saved records.
 window.nodeRefreshDemoLabels = function(saved,fresh){
  const next=structuredClone(saved),original=new Map(fresh.students.map(s=>[s.id,s]));
  for(const student of next.students){
@@ -53,6 +116,7 @@ window.nodeRefreshDemoLabels = function(saved,fresh){
  const teacherMap=new Map();
  for(const student of saved.students){const current=original.get(student.id);if(current&&student.nodeRaw)teacherMap.set(student.id,{old:student.nodeRaw.teacher,next:current.teacher})}
  for(const entry of next.entries){const pair=teacherMap.get(entry.studentId);if(pair&&entry.staff===pair.old)entry.staff=pair.next}
+ nodeAddHistoricalSamples(next,fresh.students);
  next.nodeMetadata={...next.nodeMetadata,datasetVersion:window.NODE_DATA_CONFIG.datasetVersion};
  return next;
 };
