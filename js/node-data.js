@@ -1,5 +1,5 @@
 /* NODE: JSON dataset -> existing UI schema. No external API or real student records. */
-window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-22-school-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-22-homework-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
 // Add fixed demo dates so opening historical records gives repeatable results.
 const nodeOctoberDates = [
  '2026-10-02','2026-10-05','2026-10-07','2026-10-09','2026-10-12','2026-10-14',
@@ -247,9 +247,9 @@ window.nodeAddDailySamples = function(db,dates) {
      add('attendance','node-daily-attendance-'+date+'-'+student.id,date,{studentId:student.id,date,time,departureTime:(hour+2)+':'+String(seed%50).padStart(2,'0'),memo:status});
     }
    }
-   if(seed%5===0){
+   {
     const homeworkRate=nodeSampleHash('homework|'+date+'|'+student.id)%100;
-    const status=homeworkRate<65?'완료':homeworkRate<85?'부분완료':'미완료';
+    const status=homeworkRate<90?'완료':homeworkRate<97?'부분완료':'미완료';
     add('entries','node-daily-homework-'+date+'-'+student.id,date,entry('homework',student,date,{status,content:'수업 복습 10문항',scope:'수업 복습 10문항',textbookId:'',completedDate:status==='완료'?date:''}));
    }
    const key=student.classId+'-'+date;
@@ -273,4 +273,22 @@ window.nodeDemoStorage = function(db) {
  }
  copy.nodeMetadata={...db.nodeMetadata,dailyDates:[]};
  return JSON.stringify(copy);
+};
+
+window.nodeAgeDemoHomework = function(db) {
+ const today=window.nodeDailySampleDates().at(-1);
+ for(const row of db.entries){
+  if(row.kind!=='homework'||!row.sample||row.deletedAt)continue;
+  const pristine=row.dailyDemo?row.demoSignature===nodeSampleSignature(row):row.createdAt===row.updatedAt;
+  if(!pristine)continue;
+  const age=Math.floor((Date.parse(today+'T12:00:00Z')-Date.parse(row.date+'T12:00:00Z'))/86400000);
+  if(age>14||(age>2&&nodeSampleHash(row.id)%100<97)){
+   row.status='완료';
+   row.completedDate=new Date(Date.parse(row.date+'T12:00:00Z')+2*86400000).toISOString().slice(0,10);
+  }
+  if(row.dailyDemo){
+   if(nodeSampleHash('checked|'+row.id)%100<82)row.homeworkCheckedDate=row.date;
+   row.demoSignature=nodeSampleSignature(row);
+  }
+ }
 };
