@@ -272,8 +272,14 @@ window.nodeDemoStorage = function(db) {
   copy[table]=db[table].filter(row=>!row.dailyDemo||row.demoSignature!==nodeSampleSignature(row));
  }
  copy.nodeMetadata={...db.nodeMetadata,dailyDates:[]};
+ const runIds=new Set(copy.entries.filter(row=>row.kind==='test').map(row=>row.runId));
+ const testIds=new Set(copy.entries.filter(row=>row.kind==='test').map(row=>row.testId));
+ copy.runs=db.runs.filter(row=>!row.dailyDemo||row.demoSignature!==nodeSampleSignature(row)||runIds.has(row.id));
+ copy.runs.forEach(row=>testIds.add(row.testId));
+ copy.tests=db.tests.filter(row=>!row.dailyDemo||row.demoSignature!==nodeSampleSignature(row)||testIds.has(row.id));
  return JSON.stringify(copy);
 };
+window.nodeValidationData = db => JSON.parse(window.nodeDemoStorage(db));
 
 window.nodeAgeDemoHomework = function(db) {
  const today=window.nodeDailySampleDates().at(-1);
