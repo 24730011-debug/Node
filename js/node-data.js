@@ -1,5 +1,5 @@
 /* NODE: JSON dataset -> existing UI schema. No external API or real student records. */
-window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-16-academic-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-22-daily-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
 // Add fixed demo dates so opening historical records gives repeatable results.
 const nodeOctoberDates = [
  '2026-10-02','2026-10-05','2026-10-07','2026-10-09','2026-10-12','2026-10-14',
@@ -187,4 +187,89 @@ window.nodeRefreshDemoLabels = function(saved,fresh){
  nodeAddAcademicSamples(next,fresh.students);
  next.nodeMetadata={...next.nodeMetadata,datasetVersion:window.NODE_DATA_CONFIG.datasetVersion};
  return next;
+};
+
+function nodeSampleHash(value) {
+ let hash=2166136261;
+ for (const character of value) hash=Math.imul(hash^character.charCodeAt(0),16777619)>>>0;
+ return hash;
+}
+function nodeSampleSignature(row) {
+ const {demoSignature,...fields}=row;
+ return nodeSampleHash(JSON.stringify(fields));
+}
+window.nodeDailySampleDates = function() {
+ const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+ const start=new Date(today.slice(0,7)+'-01T12:00:00Z');
+ start.setUTCMonth(start.getUTCMonth()-1);
+ const dates=[];
+ for(let date=start.toISOString().slice(0,10);date<=today;){
+  dates.push(date);start.setUTCDate(start.getUTCDate()+1);date=start.toISOString().slice(0,10);
+ }
+ return dates;
+};
+window.nodeAddDailySamples = function(db,dates) {
+ const tables=['attendance','entries','tests','runs'];
+ const indexes=Object.fromEntries(tables.map(key=>[key,new Set(db[key].map(row=>row.id))]));
+ const attendanceKeys=new Set(db.attendance.map(row=>row.studentId+'|'+row.date));
+ db.entries.filter(row=>row.kind==='memo'&&/^출결\s*[:：]\s*(결석|지각|출석)\s*$/.test(row.content||''))
+  .forEach(row=>attendanceKeys.add(row.studentId+'|'+row.date));
+ const add=(table,id,date,fields)=>{
+  if(indexes[table].has(id))return;
+  const row={id,createdAt:date+'T12:00:00+09:00',updatedAt:date+'T12:00:00+09:00',deletedAt:null,sample:true,dailyDemo:true,...fields};
+  row.demoSignature=nodeSampleSignature(row);db[table].push(row);indexes[table].add(id);
+ };
+ const entry=(kind,student,date,fields)=>({kind,studentId:student.id,classId:student.classId,
+  logId:'',testId:'',date,duration:'',scoreCorrect:null,scoreTotal:null,time:'',status:'',
+  content:'',memo:'시연용 샘플 데이터',book:'',unit:'',reason:'',staff:student.teacher||'',review:false,...fields});
+ const classes=db.classes.filter(row=>!row.deletedAt);
+ const selected=new Set(classes.map(row=>row.id));
+ const generated=new Set(db.nodeMetadata?.dailyDates||[]);
+ for(const date of dates){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||generated.has(date))continue;
+  const weekday=new Date(date+'T12:00:00Z').getUTCDay();
+  for(const group of classes){
+   const key=group.id+'-'+date;
+   if(!db.tests.some(row=>row.id==='node-daily-test-'+key))add('tests','node-daily-test-'+key,date,
+    {name:group.name+' 복습 테스트 (시연용)',type:'단원 테스트',round:date.replaceAll('-',''),totalQuestions:20,answers:{},memo:'시연용 샘플 데이터',classId:group.id,date,staff:group.staff||'',rawName:''});
+   if(!db.tests.find(row=>row.id==='node-daily-test-'+key)?.deletedAt)add('runs','node-daily-run-'+key,date,{testId:'node-daily-test-'+key,classId:group.id,date,memo:'시연용 샘플 데이터'});
+  }
+  for(const student of db.students.filter(row=>!row.deletedAt&&selected.has(row.classId))){
+   const seed=nodeSampleHash(date+'|'+student.id),rate=seed%100;
+   const status=rate<5?'결석':rate<12?'지각':'출석';
+   if(rate<98&&!attendanceKeys.has(student.id+'|'+date)){
+    if(status==='결석')add('entries','node-daily-absent-'+date+'-'+student.id,date,entry('memo',student,date,{content:'출결: 결석'}));
+    else{
+     const hour=student.grade.startsWith('고')?18:16;
+     const minutes=rate<12?10+seed%20:seed%10;
+     const time=hour+':'+String(minutes).padStart(2,'0');
+     add('attendance','node-daily-attendance-'+date+'-'+student.id,date,{studentId:student.id,date,time,departureTime:(hour+2)+':'+String(seed%50).padStart(2,'0'),memo:status});
+    }
+   }
+   if(seed%5===0){
+    const homeworkRate=nodeSampleHash('homework|'+date+'|'+student.id)%100;
+    const status=homeworkRate<65?'완료':homeworkRate<85?'부분완료':'미완료';
+    add('entries','node-daily-homework-'+date+'-'+student.id,date,entry('homework',student,date,{status,content:'수업 복습 10문항',scope:'수업 복습 10문항',textbookId:'',completedDate:status==='완료'?date:''}));
+   }
+   const key=student.classId+'-'+date;
+   if(rate<95&&db.runs.some(row=>row.id==='node-daily-run-'+key&&!row.deletedAt)){
+    add('entries','node-daily-result-'+date+'-'+student.id,date,entry('test',student,date,
+     {testId:'node-daily-test-'+key,runId:'node-daily-run-'+key,scoreCorrect:8+nodeSampleHash('score|'+date+'|'+student.id)%13}));
+   }
+   if(seed%40===0)add('entries','node-daily-supplement-'+date+'-'+student.id,date,
+    entry('supplement',student,date,{time:'19:30',status:seed%3===0?'완료':'예정',content:'오답 풀이 보강',reason:'추가 복습'}));
+  }
+  generated.add(date);
+ }
+ db.nodeMetadata={...db.nodeMetadata,dailyDates:[...generated]};
+ return db;
+};
+// Recreate untouched samples when loading, storing only actual changes to them.
+window.nodeDemoStorage = function(db) {
+ const copy={...db};
+ for(const table of ['attendance','entries','tests','runs']){
+  copy[table]=db[table].filter(row=>!row.dailyDemo||row.demoSignature!==nodeSampleSignature(row));
+ }
+ copy.nodeMetadata={...db.nodeMetadata,dailyDates:[]};
+ return JSON.stringify(copy);
 };
