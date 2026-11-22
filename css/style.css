@@ -113,3 +113,28 @@
 .node-dash-panel{border:1px solid var(--dash-line);border-radius:8px;overflow:hidden;margin-bottom:20px;min-width:0}.node-dash-section-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:19px 20px}.node-dash-section-head h2{font-size:15px}.node-dash-section-head p{font-size:11px;color:#95969e;margin:5px 0 0}.node-dash-section-head>input{font-size:11px;max-width:190px;background:#fafafa}.node-dash-section-head>a{font-size:11px;white-space:nowrap;color:#7f8189}.node-dash-panel table{min-width:720px}.node-dash-panel td{padding:15px 17px;font-size:12px}.node-dash-panel th{padding:11px 17px;font-size:10px}.node-dash-panel td:first-child a{font-weight:600}.node-dash-panel td small{margin-top:4px;font-size:10px;color:#9698a0}.node-dash-present{color:var(--dash-green);font-weight:600}.node-dash-progress{display:flex;align-items:center;gap:8px;min-width:100px}.node-dash-progress progress{width:68px;height:5px;border:0;border-radius:4px;overflow:hidden;accent-color:#708c80}.node-dash-progress progress::-webkit-progress-bar{background:#ededf0}.node-dash-progress progress::-webkit-progress-value{background:#708c80}.node-dash-progress>span{font-size:10px;color:#8c8e96}.node-dash-panel-note{font-size:10px;color:#9799a0;padding:12px 20px;margin:0;background:#fdfdfd;line-height:1.7}.node-dash-bottom{display:grid;grid-template-columns:1fr 1fr;gap:20px}.node-dash-task-list{list-style:none;margin:0;padding:0 20px}.node-dash-task-list li{display:flex;gap:13px;padding:15px 0;border-top:1px solid #ededf0;align-items:flex-start}.node-dash-task-list li>div{flex:1;min-width:0}.node-dash-task-list li a{font-size:12px;font-weight:600}.node-dash-task-list li small{font-size:10px;color:#9698a0;margin-top:3px}.node-dash-task-list li p{font-size:11px;color:#7d7f88;margin:6px 0 0;overflow-wrap:anywhere}.node-dash-task-list .badge{font-size:10px;margin-top:1px;flex-shrink:0}.node-dash-time{font-size:12px;color:#5e625f;font-variant-numeric:tabular-nums;min-width:38px;margin-top:2px}.node-dash-empty{padding:24px 20px 32px;font-size:12px;color:#999ba3;margin:0;border-top:1px solid #ededf0}.node-dash-footnote{font-size:10px;color:#a0a1a8;margin:0 0 20px}
 @media(max-width:1050px){.node-dash-metrics{gap:10px}.node-dash-metric{padding:16px}.node-dash-intro{align-items:flex-start}.node-dash-bottom{gap:14px}.node-dash-date-note{width:100%;margin-left:0}}
 @media(max-width:640px){.node-dash-intro{flex-direction:column;gap:15px}.node-dash-intro h2{font-size:20px}.node-dash-quick{width:100%}.node-dash-quick a{flex:1;text-align:center;min-height:42px}.node-dash-controls{padding:13px;gap:9px}.node-dash-controls input,.node-dash-controls select{font-size:16px;min-height:44px;min-width:0;max-width:100%}.node-dash-controls label:first-child{flex:1}.node-dash-controls label:nth-of-type(2){flex-basis:100%}.node-dash-controls button{min-height:44px}.node-dash-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.node-dash-metric{padding:16px}.node-dash-metric>strong{font-size:30px}.node-dash-metric p{font-size:10px}.node-dash-bottom{grid-template-columns:1fr;gap:0}.node-dash-notice{flex-direction:column;align-items:stretch}.node-dash-notice button{min-height:42px;white-space:normal}.node-dash-section-head{padding:16px;flex-wrap:wrap}.node-dash-section-head>input{width:100%;max-width:none;min-height:44px;font-size:16px}.node-dash-definition{font-size:10px}.node-dash-task-list{padding:0 16px}.node-dash-panel-note{padding:12px 16px}}
+
+/* Record entry is the dashboard's primary task. */
+.node-dash-record{margin-bottom:28px}
+.node-dash-record .toolbar{margin-bottom:12px}
+.node-dash-record .record-intro{margin:8px 0 12px}
+.node-dash-record .raw-input{min-height:150px;height:170px;max-height:65vh}
+.node-dash-record .input-head{padding:14px 18px}
+.node-dash-record .input-bottom{padding:10px 18px}
+.node-dash-overview-title{font-size:18px;margin:0 0 14px}
+.node-dashboard .node-dash-controls{padding:12px 16px;gap:12px;margin-bottom:12px}
+.node-dashboard .node-dash-metrics{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+.node-dashboard .node-dash-metric{flex:1 1 150px;display:flex;align-items:center;gap:10px;padding:14px 18px;border:0;border-radius:0;min-height:0}
+.node-dashboard .node-dash-metric>strong{font-size:24px;line-height:1.2;margin:0}
+.node-dashboard .node-dash-metric>span{font-size:13px}
+.node-dashboard .node-dash-metric p{display:none}
+.node-dashboard .node-dash-definition{margin:8px 0 16px}
+.node-dashboard .node-dash-notice{padding:12px 16px;margin-bottom:18px}
+.page-dashboard .page-head{margin-bottom:20px}
+@media(max-width:640px){
+ .node-dash-record .raw-input{height:160px;min-height:140px}
+ .node-dash-record .record-intro{display:block}
+ .node-dash-record .record-intro .muted{display:none}
+ .node-dashboard .node-dash-metric{flex-basis:45%;padding:12px}
+ .node-dashboard .node-dash-metric>strong{font-size:22px}
+}
