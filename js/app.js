@@ -38,7 +38,8 @@ Error generating stack: `+l.message+`
  return {students,classes,rows,...stats(students),homework,supplements,unassigned,latestAttendanceDate:[...dates].sort().at(-1)||"",events};
 }
 function NodeDashboard(){
- const {db}=We(),[date,setDate]=W("dashboard-date",Ve),[classId,setClassId]=W("dashboard-class",""),[query,setQuery]=W("dashboard-class-query","");
+ const {db,save}=We(),[date,setDate]=W("dashboard-date",Ve),[classId,setClassId]=W("dashboard-class",""),[query,setQuery]=W("dashboard-class-query","");
+ (0,de.useEffect)(()=>{if(!(db.nodeMetadata?.dailyDates||[]).includes(date)){const next=structuredClone(db);window.nodeAddDailySamples(next,[date]);save(next);}},[date]);
  const data=NodeDashboardData(db,date,classId),shown=data.rows.filter(row=>nodeMatch(query,[row.name,row.staff,...data.students.filter(s=>s.classId===row.id).map(s=>s.teacher)]));
  const studentName=id=>db.students.find(s=>s.id===id)?.name||"학생",className=id=>db.classes.find(c=>c.id===id)?.name||"반 미지정";
  const classes=data.classes,metric=(label,value,sub,kind)=>i.jsxs("article",{className:"node-dash-metric "+(kind||""),children:[i.jsx("span",{children:label}),i.jsxs("strong",{children:[value,i.jsx("small",{children:"명"})]}),i.jsx("p",{children:sub})]});
@@ -93,13 +94,14 @@ function Wv(){
    try{const response=await fetch(config.url,{cache:'no-store'});if(!response.ok)throw Error('데이터 갱신 실패');const fresh=ca(window.nodeConvertStudents(await response.json()));next=ca(window.nodeRefreshDemoLabels(next,fresh));try{localStorage.setItem(config.storageKey,JSON.stringify(next));}catch{setMessage('새 이름을 표시했지만 브라우저 저장 공간을 확인해 주세요.');}}
    catch{setMessage('새 샘플 이름을 불러오지 못해 기존 저장 내용을 표시합니다.');}
   }
+  window.nodeAddDailySamples(next,window.nodeDailySampleDates());ca(next);
   setDb(next);setState('ready');
  }catch(err){setMessage(err.message);setState('error');}};
- (0,Sc.useEffect)(()=>{load();},[]);
+ (0,Sc.useEffect)(()=>{load();let day=window.nodeDailySampleDates().at(-1);const timer=setInterval(()=>{const current=window.nodeDailySampleDates().at(-1);if(current!==day){day=current;load();}},60000);return()=>clearInterval(timer);},[]);
  const unavailable=async()=>{throw Error('이 시연본에서는 서버 업로드와 인증 기능을 사용하지 않습니다.');};
- const save=async next=>{ca(next);const copy={...structuredClone(next),revision:db.revision+1};localStorage.setItem(config.storageKey,JSON.stringify(copy));setDb(copy);setMessage('이 브라우저에 저장했습니다.');};
+ const save=async next=>{ca(next);const copy={...structuredClone(next),revision:db.revision+1};localStorage.setItem(config.storageKey,window.nodeDemoStorage(copy));setDb(copy);setMessage('이 브라우저에 저장했습니다.');};
  const h=wt.jsx,hs=wt.jsxs;
- return hs(wt.Fragment,{children:[hs('aside',{className:'export-notice',children:[h('span',{className:'node-tag node-source-json',title:'JSON 파일에서 불러온 데이터',children:'J'}),' · 전체 더미 데이터 · J = JSON 파일에서 불러온 데이터 · 실제 학생 자료 미사용 · ',db.students.length,'명 / 수강 ',db.students.reduce((n,s)=>n+(s.courseEnrollments?.length||0),0),'건 · 브라우저 저장 ',h('button',{onClick:()=>{if(confirm('브라우저에서 수정한 내용을 JSON 원본으로 초기화할까요?')){try{localStorage.removeItem(config.storageKey);load(true);}catch(e){setMessage(e.message);}}},children:'더미 데이터 초기화'})]}),
+ return hs(wt.Fragment,{children:[hs('aside',{className:'export-notice',children:[h('span',{className:'node-tag node-source-json',title:'JSON 파일에서 불러온 데이터',children:'J'}),' · 시연용 샘플 데이터 · 날짜별 자동 생성 · J = JSON 파일에서 불러온 데이터 · 실제 학생 자료 미사용 · ',db.students.length,'명 / 수강 ',db.students.reduce((n,s)=>n+(s.courseEnrollments?.length||0),0),'건 · 브라우저 저장 ',h('button',{onClick:()=>{if(confirm('브라우저에서 수정한 내용을 JSON 원본으로 초기화할까요?')){try{localStorage.removeItem(config.storageKey);load(true);}catch(e){setMessage(e.message);}}},children:'더미 데이터 초기화'})]}),
  state==='loading'?h('p',{role:'status',className:'empty',children:'JSON 학생 데이터를 불러오는 중입니다…'}):state==='error'?hs('section',{className:'empty',role:'alert',children:['데이터를 불러오지 못했습니다. '+message,h('p',{children:'파일 더블클릭 대신 VS Code의 Live Server로 열어주세요.'}),h('button',{onClick:()=>load(),children:'다시 시도'})]}):h(Fy,{db,save,purge:unavailable,upload:unavailable,busy:false,sync:'JSON · 브라우저 저장',lock:()=>setMessage('더미 데이터 시연본입니다.'),notice:setMessage}),
  message&&hs('div',{className:'toast',role:'status',children:[message,h('button',{onClick:()=>setMessage(''),children:'닫기'})]})]});
 }(0,Gy.createRoot)(document.getElementById("root")).render((0,wt.jsx)(Wv,{}));})();
