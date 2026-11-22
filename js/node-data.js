@@ -1,5 +1,5 @@
 /* NODE: JSON dataset -> existing UI schema. No external API or real student records. */
-window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-22-homework-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-22-homework-volume-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
 // Add fixed demo dates so opening historical records gives repeatable results.
 const nodeOctoberDates = [
  '2026-10-02','2026-10-05','2026-10-07','2026-10-09','2026-10-12','2026-10-14',
@@ -247,7 +247,7 @@ window.nodeAddDailySamples = function(db,dates) {
      add('attendance','node-daily-attendance-'+date+'-'+student.id,date,{studentId:student.id,date,time,departureTime:(hour+2)+':'+String(seed%50).padStart(2,'0'),memo:status});
     }
    }
-   {
+   if(date===window.nodeDailySampleDates().at(-1)||weekday===1+nodeSampleHash(student.id)%5){
     const homeworkRate=nodeSampleHash('homework|'+date+'|'+student.id)%100;
     const status=homeworkRate<90?'완료':homeworkRate<97?'부분완료':'미완료';
     add('entries','node-daily-homework-'+date+'-'+student.id,date,entry('homework',student,date,{status,content:'수업 복습 10문항',scope:'수업 복습 10문항',textbookId:'',completedDate:status==='완료'?date:''}));
@@ -283,6 +283,11 @@ window.nodeValidationData = db => JSON.parse(window.nodeDemoStorage(db));
 
 window.nodeAgeDemoHomework = function(db) {
  const today=window.nodeDailySampleDates().at(-1);
+ db.entries=db.entries.filter(row=>{
+  if(row.kind!=='homework'||!row.dailyDemo||row.demoSignature!==nodeSampleSignature(row)||row.date===today)return true;
+  return new Date(row.date+'T12:00:00Z').getUTCDay()===1+nodeSampleHash(row.studentId)%5;
+ });
+
  for(const row of db.entries){
   if(row.kind!=='homework'||!row.sample||row.deletedAt)continue;
   const pristine=row.dailyDemo?row.demoSignature===nodeSampleSignature(row):row.createdAt===row.updatedAt;
