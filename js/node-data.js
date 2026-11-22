@@ -1,5 +1,5 @@
 /* NODE: JSON dataset -> existing UI schema. No external API or real student records. */
-window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-22-daily-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
+window.NODE_DATA_CONFIG = Object.freeze({mode:'json',datasetVersion:'2026-11-22-school-v1',isMockData:true,url:new URL('../data/NODE_dummy_students_300.json',document.currentScript.src).href,storageKey:'node.demo.v2'});
 // Add fixed demo dates so opening historical records gives repeatable results.
 const nodeOctoberDates = [
  '2026-10-02','2026-10-05','2026-10-07','2026-10-09','2026-10-12','2026-10-14',
@@ -141,7 +141,8 @@ window.nodeConvertStudents = function(rows) {
  const entry=(kind,s,date,extra)=>({...base(kind+'-'+s.id+'-'+db.entries.length),kind,studentId:s.id,classId:s.classId,logId:'',testId:'',date,duration:'',scoreCorrect:null,scoreTotal:null,time:'',status:'',content:'',memo:'',book:'',unit:'',reason:'',staff:s.teacher||'',review:false,...extra});
  const ids=new Set();
  console.group('[데이터 점검] NODE JSON');console.log('데이터 건수:',rows.length);console.log('항목 출처:',rows.reduce((a,s)=>(a[s.meta?.source]=(a[s.meta?.source]||0)+1,a),{}));console.groupEnd();
- for(const s of rows){
+ for(const source of rows){
+  const s=['S001','S051','S101'].includes(source.id)?{...source,name:'김민준'}:source;
   if(!s.meta||!['json','api'].includes(s.meta.source)||!Array.isArray(s.meta.real)||!Array.isArray(s.meta.dummy))throw Error('출처 meta 누락 또는 형식 오류');
   if(!s.id||ids.has(s.id)||!Array.isArray(s.courseEnrollments))throw Error('학생 ID 중복 또는 수강 과정 누락');ids.add(s.id);
   const classId=s.schoolLevel+'-'+s.grade;
